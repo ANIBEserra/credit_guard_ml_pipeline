@@ -1,0 +1,18 @@
+# Use a slim image of Python
+FROM python:3.9-slim
+
+# Define a working directory inside the container
+WORKDIR /app
+
+# Install dependencies first (optimizes Docker cache)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the entire project content to the container
+COPY . .
+
+# Ensure Python can find the modules
+ENV PYTHONPATH="/app"
+
+# Command to run the script
+CMD ["python", "scripts/main.py"]
