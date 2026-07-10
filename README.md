@@ -1,3 +1,5 @@
+Acesso o Looker Studio para visualizar o dashboard interativo: [Credit Guard Pipeline](hhttps://datastudio.google.com/s/oUAEZgpbSvY)
+
 ## 🏛️ 1. Governança de Dados & Conformidade (LGPD)
 
 Este projeto foi desenhado sob os princípios de *Privacy by Design*, simulando a estrutura de governança de um **Bureau de Crédito**. Como o pipeline processa dados cadastrais de pessoas jurídicas e de seus respectivos quadros societários para subsidiar análises de risco, a estratégia de ingestão segrega os ativos conforme sua finalidade de negócio e enquadramento na Lei Geral de Proteção de Dados (LGPD -Lei nº 13.709/18).
