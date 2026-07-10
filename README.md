@@ -32,7 +32,7 @@ O pipeline foi estruturado seguindo o framework de gerenciamento do ciclo de vid
 
 ## 🛠️ 3. Arquitetura Técnica & Infraestrutura Serverless
 
-O ecossistema foi projetado utilizando o conceito de **Infrastructure as Code (IaC)** e desacoplamento de camadas, sendo sustentado por serviços gerenciados (Serverless) da **Google Cloud Platform (GCP)** e automatizado via CI/CD no **GitHub Actions**.
+O pipeline foi projetado utilizando o conceito de **Infrastructure as Code (IaC)** e desacoplamento de camadas, sendo sustentado por serviços gerenciados (Serverless) da **Google Cloud Platform (GCP)** e automatizado via CI/CD no **GitHub Actions**.
 
 ### 🏗️ Desenho de Arquitetura
 
@@ -49,7 +49,7 @@ O ecossistema foi projetado utilizando o conceito de **Infrastructure as Code (I
                                                       +-----------------------+
 ```
 
-### 🧰 Componentes do Ecossistema
+### 🧰 Componentes do Pipeline
 
 * **Orquestrador de Workflows (GitHub Actions):** 
   * Atua como o motor do pipeline, executando os scripts Python de ingestão por meio de gatilhos agendados (*cron*).
