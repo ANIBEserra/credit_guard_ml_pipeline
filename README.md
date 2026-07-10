@@ -1,4 +1,4 @@
-Acesso o Looker Studio para visualizar o dashboard interativo: [Credit Guard Pipeline](https://datastudio.google.com/s/oUAEZgpbSvY)
+Acesse o Looker Studio para visualizar o dashboard monitoring: [Credit Guard Pipeline](https://datastudio.google.com/s/oUAEZgpbSvY)
 
 ## 🏛️ 1. Governança de Dados & Conformidade (LGPD)
 
