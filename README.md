@@ -1,95 +1,134 @@
 Acesse o Looker Studio para visualizar o dashboard monitoring: [Credit Guard Pipeline](https://datastudio.google.com/s/oUAEZgpbSvY)
 
-## 🏛️ 1. Governança de Dados & Conformidade (LGPD)
+# Pipeline Serverless de Ingestão e Governança de Dados Cadastrais CNPJ (GCP & GitHub Actions)
 
-Este projeto foi desenhado sob os princípios de *Privacy by Design*, simulando a estrutura de governança de um **Bureau de Crédito**. Como o pipeline processa dados cadastrais de pessoas jurídicas e de seus respectivos quadros societários para subsidiar análises de risco, a estratégia de ingestão segrega os ativos conforme sua finalidade de negócio e enquadramento na Lei Geral de Proteção de Dados (LGPD -Lei nº 13.709/18).
+## 📌 1. Propósito do Projeto & Visão de Negócio
 
-### 📋 Matriz de Conformidade e Classificação de Dados
+Em ambientes corporativos modernos, a consolidação de dados cadastrais vindos de fontes externas públicas (como a Receita Federal) costuma enfrentar desafios crônicos: payloads JSON complexos e aninhados, falta de padronização, ausência de dicionários de dados claros e riscos de exposição de dados sensíveis de pessoas físicas (sócios).
 
-| Domínio dos Dados | Atributos Principais | Finalidade de Uso | Base Legal (LGPD) | Classificação de Segurança |
-| :--- | :--- | :--- | :--- | :--- |
-| **Cadastral PJ** | CNPJ, Razão Social, CNAE, Endereço, Situação Cadastral | Higienização de bases, enriquecimento cadastral, mitigação de risco de fraude de terceiros e geração de indicadores de mercado. | **Legítimo Interesse**<br>(Art. 7º, IX) | **Público**<br>(Dados institucionais de registro público) |
-| **QSA** *(Quadro de Sócios)* | Nome do Sócio, CPF (mascarado/parcial), Qualificação | Avaliação de interdependência financeira, identificação de beneficiários finais para concessão de crédito e **geração de dashboards analíticos de BI (Business Intelligence)** para monitoramento de risco. | **Proteção do Crédito**<br>(Art. 7º, X) | **Pessoal / PII**<br>(Exige controle de acesso restrito via RBAC no ambiente interno, embora os CPFs já possuam mascaramento parcial nativo da origem). |
+O objetivo deste projeto foi construir um **pipeline de dados 100% serverless e de baixo custo (FinOps)** para centralizar, estruturar e governar os dados de CNPJ e Quadro de Sócios e Administradores (QSA) consumidos via *BrasilAPI*. 
 
-### 🔒 Diretrizes de Segurança e Privacidade Aplicadas
-* **Pseudonimização na Origem:** Os documentos de pessoas físicas no domínio QSA (CPFs dos sócios) já são ingeridos em formato mascarado (`***.XXX.XXX-**`) fornecido pela BrasilAPI. O pipeline preserva essa característica de privacidade ao longo das camadas (Raw ➔ Silver), mitigando riscos de reidentificação direta do titular.
-* **Controle de Acesso e Governança de Visualização Pública:** No 'ambiente corporativo simulado' (GCP), o acesso aos nomes completos dos sócios para fins de BI é restrito e auditado via RBAC. Contudo, dado que este portfólio é público, foi aplicada uma camada de mascaramento dinâmico nos campos nominais de pessoas físicas diretamente na camada de visualização (Looker Studio). Essa abordagem atende ao princípio da finalidade da LGPD, impedindo a exposição indexada e em lote de nomes na internet e mitigando riscos de *data scraping* por terceiros.
+O projeto foca na excelência da **Engenharia e Governança de Dados**, demonstrando:
+* **Automação Eficiente:** Ingestão agendada via CI/CD sem a necessidade de manter servidores próprios ligados 24/7.
+* **Arquitetura Escalável:** Armazenamento otimizado utilizando o formato colunar `.parquet` para reduzir custos de varredura analítica.
+* **Cultura de Governança:** Aplicação prática de catálogo de dados, dicionário de variáveis e técnicas de privacidade (*Privacy by Design*) diretamente na camada de entrega.
 
+## 🏗️ 2. Arquitetura Medalhão Serverless
 
-## 🔄 2. Ciclo de Vida dos Dados & Metodologia Smart Data
-
-O pipeline foi estruturado seguindo o framework de gerenciamento do ciclo de vida dos dados (Coleta, Armazenamento, Recuperação, Uso e Expurgo), garantindo escalabilidade, arquitetura 100% serverless e otimização de custos (FinOps) em cada etapa da jornada analítica.
+A arquitetura do projeto foi desenhada seguindo os princípios de desacoplamento de camadas (Medalhão) e computação em nuvem gerenciada. O fluxo garante o processamento eficiente de grandes volumes de dados de forma assíncrona, focando na otimização de custos de armazenamento e consulta.
 
 ```text
- [Origem: BrasilAPI] ➔ [1. Coleta] ➔ [2. Armazenamento (Raw)] ➔ [3. Processamento (Silver)] ➔ [4. Uso (BI/Looker)] ➔ [5. Expurgo]
- ```
-
-* **1. Coleta (Ingestão):** Orquestrada via **GitHub Actions**, a coleta consome dados cadastrais e societários da *BrasilAPI* por meio de scripts **Python** executados de forma automatizada (via gatilhos de tempo - *cron*). Essa abordagem elimina a necessidade de gerenciar servidores ou clusters de orquestração dedicados, garantindo resiliência e baixo custo de execução.
-* **2. Armazenamento (Camada Raw/Bronze):** Os dados brutos em formato JSON são persistidos diretamente no **Google Cloud Storage (GCS)** em buckets. Esta camada funciona como um *Data Lake* primário, preservando o histórico e a fidelidade do dado original sem modificações conforme a fonte.
-* **3. Recuperação & Processamento (Camada Silver):** Os arquivos JSON do GCS são lidos, limpos e estruturados em .parquet de forma relacional dentro do **Google BigQuery**. Nesta etapa, os dados sofrem transformações essenciais para o negócio: tipagem de dados, padronização de strings, tratamento de nulos e estruturação da tabela de Quadro de Sócios e Administradores (QSA).
-* **4. Uso & Inteligência (Smart Data / BI):** É a fase onde o dado bruto se transforma em inteligência. Os dados estruturados da camada Silver alimentam um painel no **Looker Studio**, gerando métricas agregadas de interdependência de sócios, concentração de risco por CNAE e distribuição geográfica das empresas. O acesso na nuvem é restrito via políticas de **RBAC (Role-Based Access Control)** no BigQuery.
-* **5. Arquivamento & Expurgo (Retenção):** Para conformidade com a LGPD e otimização de custos de armazenamento no BigQuery e GCS, aplicam-se regras de ciclo de vida (*Object Lifecycle Management*):
-  * **Dados Brutos (GCS):** Movidos automaticamente para classes de armazenamento de cold storage (Archive) após 90 dias.
-
-
-## 🛠️ 3. Arquitetura Técnica & Infraestrutura Serverless
-
-O pipeline foi projetado utilizando o conceito de **Infrastructure as Code (IaC)** e desacoplamento de camadas, sendo sustentado por serviços gerenciados (Serverless) da **Google Cloud Platform (GCP)** e automatizado via CI/CD no **GitHub Actions**.
-
-### 🏗️ Desenho de Arquitetura
-
-```text
-+-------------------+      +-------------------+      +-----------------------+
-|  GitHub Actions   | ---> |   Cloud Storage   | ---> |    Google BigQuery    |
-| (Orquestração/    |      | (Camada Raw/JSON) |      | (Camada Silver/OLAP)  |
-|  Scripts Python)  |      +-------------------+      +-----------------------+
-+-------------------+                                             |
-                                                                  v
-                                                      +-----------------------+
-                                                      |     Looker Studio     |
-                                                      | (Visualização/BI)     |
-                                                      +-----------------------+
+  [ BrasilAPI ]
+        │ (Request Assíncrona / Python)
+        ▼
+ ┌────────────────────────────────────────┐
+ │            GitHub Actions              │ ◄── [ Gatilho Cron / CI/CD ]
+ └────────────────────────────────────────┘
+        │
+        ├─► [ 1. Extração JSON ] ──► Google Cloud Storage (Bucket Raw / Bronze)
+        │
+        └─► [ 2. Conversão &   ] ──► Google Cloud Storage (Bucket Structured / Silver)
+             Processamento .parquet
+        │
+        ▼
+ ┌────────────────────────────────────────┐
+ │        Google BigQuery (OLAP)          │ ◄── [ Armazenamento de Tabelas Silver ]
+ └────────────────────────────────────────┘
+        │
+        ▼
+ ┌────────────────────────────────────────┐
+ │         Looker Studio (BI)             │ ◄── [ Entrega e Mascaramento de Dados ]
+ └────────────────────────────────────────┘
 ```
 
-### 🧰 Componentes do Pipeline
+### 🧱 Detalhamento Técnico das Camadas
 
-* **Orquestrador de Workflows (GitHub Actions):** 
-  * Atua como o motor do pipeline, executando os scripts Python de ingestão por meio de gatilhos agendados (*cron*).
-  * Gerencia *secrets* (chaves de acesso à GCP e chaves de API), garantindo que credenciais sensíveis nunca fiquem expostas no código-fonte.
-* **Storage de Arquivos Brutos (Google Cloud Storage):**
-  * Armazenamento de objetos de baixo custo focado na retenção do dado bruto (JSON) em sua forma original.
-* **Data Warehouse Analítico (Google BigQuery):**
-  * Mecanismo de processamento de dados em larga escala (OLAP). É responsável por receber as cargas transformadas e expor as tabelas relacionais prontas para consumo de BI e Analytics.
-* **Autenticação e Permissões (GCP IAM & Service Accounts):**
-  * O acesso entre as ferramentas (GitHub ➔ GCP ➔ Looker Studio) é regido pelo **Princípio do Menor Privilégio**, utilizando chaves de contas de serviço limitadas estritamente às permissões de leitura/escrita necessárias em cada recurso.
+* **Camada Bronze (Raw/JSON):** Os dados retornados da API em formato JSON bruto são salvos diretamente no **Google Cloud Storage (GCS)**. Isso preserva a imutabilidade do dado original e permite reprocessamentos futuros (*replayabilidade*) sem onerar a API de origem.
+* **Processamento e Otimização (.parquet):** Utilizando **Python**, o payload JSON é parseado, limpo e convertido para o formato colunar **.parquet**. Esta etapa reduz drasticamente o tamanho do arquivo final no Data Lake e otimiza a velocidade de leitura para as etapas analíticas.
+* **Camada Silver (Structured/BigQuery):** Os arquivos `.parquet` estruturados no GCS são integrados ao **Google BigQuery**. Nesta camada analítica, os dados ganham tipagem rígida, schemas bem definidos e ficam organizados de forma relacional (Tabela de Empresas e Tabela de Quadro de Sócios).
+* **Camada de Entrega (BI/Looker Studio):** O BigQuery expõe as tabelas diretamente para o **Looker Studio**, onde métricas operacionais e volumétricas são exibidas de forma fluida, sem a necessidade de processamentos complexos em tempo de execução no painel.
 
 
-## 🧠 4. Feature Engineering & Modelagem Analítica
+## 📁 3. Organização do Repositório & Estrutura de Pastas
 
-A transformação dos dados da camada Raw para a camada Silver focou em gerar variáveis estratégicas (features) essenciais para modelos de concessão de crédito, mitigação de riscos e análise de fraude.
+O projeto foi estruturado de forma prática e organizada, separando os scripts de execução, as configurações de metadados e as documentações de suporte.
 
-### 📊 Principais Features Desenvolvidas
+```text
+├── configs/
+│   ├── __init__.py
+│   └── mapping.py           # Dicionários de mapeamento (De/Para) e renomeação de colunas
+├── data/
+│   └── input/
+│       └── cnpjs.csv        # Lista inicial de CNPJs que serve de insumo para a busca na API
+│   ├── raw/                 # [Dinâmico] Criado na execução para armazenar temporariamente os arquivos JSON brutos
+│   └── silver/              # [Dinâmico] Criado na execução para armazenar temporariamente os arquivos .parquet
+├── docs/                    # Documentações auxiliares e dicionários de dados do projeto
+├── notebooks/
+│   ├── analyse_silver.ipynb # Análise e validação dos dados estruturados na camada Silver
+│   └── brasil-api.ipynb     # Jupyter Notebook utilizado para exploração inicial da BrasilAPI
+├── scripts/
+│   └── main.py              # Script principal contendo as funções de extração, limpeza e carga na GCP
+├── .gitignore               # Definição de arquivos e credenciais locais que não devem ser versionados
+├── README.md                # Documentação completa do ecossistema
+└── requirements.txt         # Dependências do projeto (pandas, pyarrow, google-cloud-storage, etc.)
+```
 
-* **Mapeamento de Vínculos Societários (QSA):**
-  * Criação de chaves de relacionamento para identificar interdependência entre empresas por meio de sócios em comum. Essa métrica é crucial para identificar grupos econômicos ocultos e contágio de inadimplência.
-* **Métricas de Concentração Setorial e Geográfica:**
-  * Consolidação do volume de empresas ativas por região e segmento (CNAE), permitindo identificar a exposição de risco de crédito em setores específicos da economia.
-* **Estruturação de Qualificação do Quadro Societário:**
-  * Padronização dos cargos e níveis de responsabilidade dos administradores (ex: Diretor, Sócio-Administrador) para modelagem de score baseado no perfil do corpo diretivo.
+### ⚙️ Organização do Fluxo & Gerenciamento de Arquivos Temporários
 
+* **Insumo de Entrada (`data/input/cnpjs.csv`):** Arquivo estático contendo a relação de CNPJs que o pipeline deve processar a cada execução.
+* **Ciclo de Vida Local e Efemeridade:** Para garantir a resiliência e o isolamento de etapas, o script cria as pastas `data/raw/` e `data/silver/` em tempo de execução para apoiar o processamento local. No entanto, ao final do pipeline, a função `clean_local_temp_files` expurga esses diretórios. Isso garante que o runner do GitHub Actions não acumule lixo eletrônico e atenda a boas práticas de segurança de dados.
+* **Isolamento de Regras (`configs/`):** Centraliza os mapeamentos e renomeações de colunas. Caso a API de origem altere o nome de algum campo, a manutenção é feita apenas neste arquivo, mantendo o script principal intacto.
+* **Exploratório (`notebooks/`):** Espaço focado no desenvolvimento incremental, testes de conexões e prototipação das transformações analíticas antes de integrá-las ao código de produção.
 
-## 📈 5. Resultados Práticos, Insights de Negócio & Próximos Passos
+## 🛡️ 4. Governança de Dados & Gestão de Metadados
 
-O objetivo final éconsolidar dados dispersos em uma solução centralizada de inteligência cadastral, fornecendo insumos claros para a tomada de decisão em mesas de crédito e compliance.
+A governança deste pipeline foi desenhada para garantir a rastreabilidade e o controle sobre o ciclo de vida do dado.
 
-### 💡 Insights Gerados pelo Dashboard (Looker Studio)
+### ⏳ 1. Ciclo de Vida dos Dados (Data Lifecycle Management)
+O pipeline adota uma política de persistência para garantir a conformidade com a LGPD e boas práticas de governança de dados:
+* **Ingestão e Descarte Local:** Os arquivos gerados nas pastas `data/raw/` e `data/silver/` existem apenas durante a execução do script no runner e são expurgados imediatamente após a carga em nuvem.
+* **Persistência em Camadas (GCP):** O dado bruto permanece imutável no Cloud Storage (Bronze) para fins de auditoria, enquanto a camada analítica (Silver) no BigQuery é atualizada para consumo, garantindo um histórico limpo e auditável.
 
-* **Visão 360° do Ecossistema Societário:** Centralização de consultas que antes exigiam buscas manuais ou individuais, permitindo cruzar dados de CNPJ e QSA de forma instantânea.
-* **Análise de Concentração de Risco:** Identificação visual rápida de setores econômicos (CNAE) ou regiões geográficas com maior volume de empresas ativas no portfólio analisado.
+### 📋 2. Matriz de Conformidade e Classificação de Dados
+| Domínio dos Dados | Atributos Principais | Finalidade de Uso | Base Legal (LGPD) | Classificação de Segurança |
+| :--- | :--- | :--- | :--- | :--- |
+| **Cadastral PJ** | `NRCNPJ`, `NMRAZSOC`, `NMFANT`, `VLCPTSOC`, `IDMTZFIL`, `DSIDMTZFIL` | Centralização, higienização e enriquecimento cadastral de pessoas jurídicas para mitigação de riscos operacionais, prevenção a fraudes (KYC) e validação de dados em ecossistemas de negócios. | **Legítimo Interesse**<br>(Art. 7º, IX)<br><br>**Cumprimento de Obrigação Legal ou Regulatória**<br>(Art. 7º, II - Conformidade com PLD/Compliance) | **Público**<br>(Dados institucionais de registro público ostensivo na Receita Federal) |
+| **QSA** *(Quadro de Sócios)* | Nome do Sócio, CPF (mascarado/parcial), Qualificação do Sócio | Avaliação de vínculos societários, identificação de beneficiários finais e geração de dashboards analíticos de monitoramento no Looker Studio. | **Legítimo Interesse**<br>(Art. 7º, IX - Proteção do próprio negócio)<br><br>**Cumprimento de Obrigação Legal ou Regulatória**<br>(Art. 7º, II - Normas de Compliance e Governança) | **Pessoal / PII**<br>(Dados de pessoas físicas. Exige mascaramento dinâmico na camada de visualização e controle de efemeridade com descarte local via `clean_local_temp_files`). |
 
-### 🚀 Próximos Passos & Evolução do Projeto
+### 📖 3. Catálogo de Dados & Linhagem
+A estrutura de dados é mapeada de forma declarativa e centralizada:
+* **Centralização de Schemas:** As definições de tipos, chaves e relacionamentos do BigQuery são controladas via código, garantindo que a volumetria ingerida respeite rigorosamente o contrato de dados estabelecido.
+* **Separação de Contextos:** Divisão clara entre a entidade de dados cadastrais da Empresa e a entidade do Quadro de Sócios e Administradores (QSA).
 
-Para as próximas iterações da arquitetura, estão planejadas as seguintes implementações:
-* **Camada de Machine Learning (Gold):** Integração com o BigQuery ML ou Vertex AI para construir um modelo preditivo de *Score de Sobrevivência* empresarial ou propensão à inadimplência baseado no tempo de abertura e capital social.
-* **Monitoramento e Alertas de Data Quality:** Implementação de testes automatizados de qualidade de dados (via Great Expectations ou queries agendadas) para monitorar anomalias na ingestão (ex: volumetria abaixo do esperado ou campos nulos inesperados).
-* **CI/CD para Mudanças de Schema:** Automação de testes de integração nos scripts Python para validar o schema dos dados caso a API de origem sofra atualizações na estrutura dos payloads JSON.
+### 📋 4. Tabela de Logs e Monitoramento
+Para garantir a observabilidade do pipeline, o script alimenta uma tabela dedicada de logs operacionais no BigQuery a cada execução. Essa tabela registra:
+* **Metadados de Ingestão:** Data e hora do processamento, volume de CNPJs consultados com sucesso, quantidade de falhas na API e o status final da carga (Sucesso/Erro). Isso permite rastrear a saúde do fluxo analítico sem a necessidade de abrir consoles de infraestrutura.
+
+### 🔤 5. Padronização de Nomenclatura (Padrão DATASUS)
+O dicionário de colunas no arquivo `configs/mapping.py` adota a **metodologia de compressão de vogais e prefixos taxonômicos inspirada no DATASUS**:
+
+O de/para mapeia explicitamente os tipos e aliases curtos:
+* `cnpj` ➔ `NRCNPJ` (Número CNPJ)
+* `razao_social` ➔ `NMRAZSOC` (Nome Razão Social)
+* `nome_fantasia` ➔ `NMFANT` (Nome Fantasia)
+* `capital_social` ➔ `VLCPTSOC` (Valor Capital Social)
+* `identificador_matriz_filial` ➔ `IDMTZFIL` (Identificador Matriz Filial)
+* `descricao_identificador_matriz_filial` ➔ `DSIDMTZFIL` (Descrição Identificador Matriz Filial)
+
+Essa abordagem reduz drasticamente o ruído dos metadados, economiza bytes de armazenamento de colunas, padroniza as chaves lógicas do Data Warehouse e assegura que a modelagem relacional seja limpa e previsível para qualquer analista da organização.
+
+## 📊 5. Monitoramento do Pipeline & Insights Operacionais
+
+O estágio final do ecossistema consiste em expor os dados processados e estruturados da camada Silver (BigQuery) para o **Looker Studio**, onde o fluxo de ingestão e a volumetria empresarial são monitorados visualmente.
+
+### 📈 Métricas de Monitoramento e Observabilidade
+O painel técnico consome diretamente a tabela de logs gerada pelo pipeline, permitindo o acompanhamento de indicadores vitais de DataOps:
+* **Taxa de Sucesso da Ingestão:** Percentual de requisições enviadas para a BrasilAPI que retornaram com sucesso (*Status 200*) vs. falhas cadastrais (CNPJs inválidos ou inexistentes).
+* **Volumetria Diária:** Monitoramento do volume de linhas injetadas por execução para garantir que não haja quedas drásticas ou anomalias no fluxo de processamento.
+* **Métricas de FinOps:** Rastreabilidade do tempo de execução e volume de dados trafegados, ajudando a garantir o funcionamento do pipeline dentro do limite de gratuidade (*Free Tier*) da GCP.
+
+### 💡 Extração de Insights Cadastrais Básicos
+Além do monitoramento do pipeline, o painel consolida visões gerais sobre o portfólio de empresas processadas para fornecer inteligência de negócios:
+* **Distribuição Geográfica:** Concentração das empresas ativas no território nacional por UF e município (utilizando o campo `cd_municipio` mapeado).
+* **Análise de Porte e Capital:** Agrupamento do volume financeiro das organizações com base na distribuição do campo `VLCPTSOC` (Capital Social).
+* **Visão de Quadro Societário:** Mapeamento quantitativo do número de sócios por organização, permitindo entender a densidade de vínculos societários no ecossistema consultado.
