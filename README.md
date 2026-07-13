@@ -1,6 +1,25 @@
+<p align="right">
+  <b>Idiomas:</b>
+  🇧🇷 Português | 
+  <a href="README.en.md">🇺🇸 English</a> | 
+  <a href="README.es.md">🇪🇸 Español</a>
+</p>
+
+---
+
 Acesse o Looker Studio para visualizar o dashboard monitoring: [Credit Guard Pipeline](https://datastudio.google.com/s/oUAEZgpbSvY)
 
 # Pipeline Serverless de Ingestão e Governança de Dados Cadastrais CNPJ (GCP & GitHub Actions)
+
+## 🗺️ Sumário de Navegação
+
+* [📌 1. Propósito do Projeto & Visão de Negócio](#-1-propósito-do-projeto--visão-de-negócio)
+* [🏗️ 2. Arquitetura Medalhão Serverless](#️-2-arquitetura-medalhão-serverless)
+* [📁 3. Organização do Repositório & Estrutura de Pastas](#-3-organização-do-repositório--estrutura-de-pastas)
+* [🛡️ 4. Governança de Dados & Gestão de Metadados](#️-4-governança-de-dados--gestão-de-metadados)
+* [📊 5. Monitoramento do Pipeline & Insights Operacionais](#-5-monitoramento-do-pipeline--insights-operacionais)
+
+---
 
 ## 📌 1. Propósito do Projeto & Visão de Negócio
 
