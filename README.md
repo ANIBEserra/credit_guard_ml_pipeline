@@ -1,4 +1,4 @@
-<p align="right">
+<p align="center">
   <b>Idiomas:</b>
   🇧🇷 Português | 
   <a href="README.en.md">🇺🇸 English</a> | 
