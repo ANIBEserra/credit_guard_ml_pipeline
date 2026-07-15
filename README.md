@@ -31,9 +31,9 @@ Este projeto apresenta o ciclo de vida completo de um pipeline de dados governad
 
 ## 🏢 1. Contexto de Negócio, Desafio e Propósito
 
-A **CreditGuard** é uma fintech de inteligência de crédito especializada no mapeamento de riscos e compliance (*Know Your Customer* - KYC) para transações comerciais de médio e grande porte. Antes de aprovar limites financeiros ou parcerias comerciais, a fintech precisa avaliar a saúde cadastral das empresas e de seus respectivos sócios.
+A **CreditGuard** é uma fintech de inteligência de crédito especializada no mapeamento de riscos e compliance (*Know Your Customer* - KYC) para transações comerciais de pequeno e médio porte. Antes de aprovar limites financeiros ou parcerias comerciais, a fintech precisa avaliar a saúde cadastral das empresas e de seus respectivos sócios.
 
-Em ambientes corporativos modernos, a consolidação desses dados cadastrais vindos de fontes públicas enfrenta desafios crônicos: payloads JSON complexos e aninhados, falta de padronização, ausência de dicionários de dados claros e riscos de exposição de dados sensíveis de pessoas físicas (sócios).
+Em ambientes corporativos modernos, a consolidação desses dados cadastrais vindos de fontes públicas enfrenta desafios como: payloads JSON complexos e aninhados, falta de padronização, ausência de dicionários de dados claros e riscos de exposição de dados sensíveis de pessoas físicas (sócios).
 
 ### O Problema (A dor do negócio)
 Antes da implementação deste projeto, a equipe de análise operacional realizava consultas manuais no portal da Receita Federal e em outras fontes públicas. Isso gerava:
@@ -51,7 +51,7 @@ Desenvolver um **pipeline de dados 100% serverless e de baixo custo (FinOps)** p
 
 ## 📋 2. Requisitos do Projeto
 
-### Requisitos Funcionais (O que o sistema entrega)
+### Requisitos Funcionais (O que o pipeline entrega)
 * **RF-01:** Extração automatizada e em lote dos dados cadastrais de CNPJs fornecidos como insumo de entrada.
 * **RF-02:** Armazenamento seguro do payload bruto em nuvem para viabilizar reprocessamentos futuros (*replayability*).
 * **RF-03:** Padronização taxonômica e limpeza dos dados de empresas e sócios, removendo caracteres especiais e aplicando tipagem estrita.
@@ -136,31 +136,17 @@ O projeto foi estruturado de forma prática e organizada, separando os scripts d
 
 ## 🛡️ 5. Política de Governança de Dados & Gestão de Metadados
 
-Para garantir que a CreditGuard opere de acordo com os mais rigorosos padrões éticos, legais e regulatórios, o pipeline segue as diretrizes estruturadas do nosso framework de governança:
+Para garantir que a CreditGuard opere de acordo com padrões éticos, legais e regulatórios, o pipeline segue as diretrizes estruturadas do nosso framework de governança:
 
-```mermaid
-flowchart LR
-    A["**Propósito**<br>Assegurar LGPD"] --> B["**Escopo**<br>Todo o fluxo"]
-    B --> C["**Papéis**<br>Eng/Gov/Risk"]
-    C --> D["**Diretrizes**<br>PII/Efêmero"]
-    D --> E["**Conformidade**<br>CI-CD/Logs/DQ"]
-
-    classDef default fill:#111827,stroke:#374151,stroke-width:1px,color:#fff;
-    classDef prop fill:#00f2fe,stroke:#00c6ff,color:#000;
-    classDef esc fill:#00c6ff,stroke:#0072ff,color:#000;
-    classDef pap fill:#0072ff,stroke:#00c6ff,color:#fff;
-    classDef dir fill:#0f2027,stroke:#203a43,color:#fff;
-    classDef conf fill:#1e293b,stroke:#475569,color:#fff;
-    
-    class A prop;
-    class B esc;
-    class C pap;
-    class D dir;
-    class E conf;
+```text
+┌───────────────┐      ┌───────────────┐      ┌───────────────┐      ┌───────────────┐      ┌───────────────┐
+│   Propósito   │ ───► │    Escopo     │ ───► │    Papéis     │ ───► │  Diretrizes   │ ───► │ Conformidade  │
+│ Assegurar LGPD│      │ Todo o fluxo  │      │ Eng/Gov/Risk  │      │  PII/Efêmero  │      │ CI-CD/Logs/DQ │
+└───────────────┘      └───────────────┘      └───────────────┘      └───────────────┘      └───────────────┘
 ```
 
 ### 🟢 1. Propósito
-Garantir a integridade, rastreabilidade e privacidade dos dados de pessoas físicas e jurídicas durante todo o ciclo de vida da informação no pipeline da CreditGuard. Esta política existe para mitigar riscos de vazamento de dados confidenciais (em conformidade com a LGPD) e assegurar que as decisões de análise de crédito sejam tomadas com base em dados de alta qualidade e auditáveis.
+Garantir a integridade, rastreabilidade e privacidade dos dados de pessoas jurídicas durante todo o ciclo de vida da informação no pipeline da CreditGuard. Esta política existe para mitigar riscos de vazamento de dados confidenciais (em conformidade com a LGPD) e assegurar que as decisões de análise de crédito sejam tomadas com base em dados de qualidade e auditáveis.
 
 ### 🔵 2. Escopo
 Esta política aplica-se de forma obrigatória a todas as etapas e ativos de dados envolvidos no projeto:
@@ -174,7 +160,7 @@ Esta política aplica-se de forma obrigatória a todas as etapas e ativos de dad
 * **Analista de Governança de Dados (DG):** Responsável por definir as regras de classificação de dados, validar as políticas de privacidade (máscaras de CPF), gerenciar o dicionário de dados de metadados e monitorar os indicadores de qualidade (completude).
 * **Analistas de Negócio / Risco de Crédito:** Consumidores finais das tabelas tratadas na camada Silver e dos dashboards. Não possuem privilégios de escrita nos bancos de dados e devem consumir os dados de pessoas físicas de forma estritamente enmascarada.
 
-### 🔵 4. Diretrizes (Regras de Segurança e Arquitetura)
+### 🔵 4. Diretrizes
 * **Diretriz de Efimeridade (Descarte):** Os arquivos locais criados nas pastas `data/raw/` e `data/silver/` devem ser eliminados pelo script (`clean_local_temp_files`) imediatamente após o upload bem-sucedido para o Cloud Storage.
 * **Diretriz de Nomenclatura (Metadados):** O mapeamento de colunas no arquivo `configs/mapping.py` deve adotar o padrão de redução taxonômica inspirado no DATASUS (ex: `NRCNPJ`, `NMRAZSOC`), padronizando o dicionário de dados corporativo.
 * **Diretriz de Privacidade (LGPD):** Dados pessoais identificáveis (PII) dos sócios, como o CPF parcial, devem receber tratamento de mascaramento na camada de exibição analítica.
@@ -204,11 +190,11 @@ O dicionário de colunas no arquivo `configs/mapping.py` adota a metodologia de 
 * `identificador_matriz_filial` ➔ `IDMTZFIL` (Identificador Matriz Filial)
 * `descricao_identificador_matriz_filial` ➔ `DSIDMTZFIL` (Descrição Identificador Matriz Filial)
 
-Essa abordagem reduz drasticamente o ruído dos metadados, economiza bytes de armazenamento de colunas, padroniza as chaves lógicas do Data Warehouse e assegura que a modelagem relacional seja limpa e previsível para qualquer analista da organização.
+Essa abordagem reduz o ruído dos metadados, economiza bytes de armazenamento de colunas, padroniza as chaves lógicas do Data Warehouse e assegura que a modelagem relacional seja limpa e previsível para qualquer analista da organização.
 
 ---
 
-## 🚀 6. Ciclo de Testes e Entrega (Do Desenvolvimento à Produção)
+## 🚀 6. Ciclo de Testes e Entrega
 
 ### Como Testamos
 * **Validação Local:** Testes funcionais unitários utilizando uma amostra reduzida de CNPJs para certificar que o script `main.py` consegue realizar a paginação e o consumo da API sem quebras.
@@ -229,7 +215,7 @@ O estágio final do ecossistema consiste em expor os dados processados e estrutu
 ### 📈 Métricas de Monitoramento e Observabilidade
 O painel técnico consome diretamente a tabela de logs gerada pelo pipeline, permitindo o acompanhamento de indicadores vitais de DataOps:
 * **Taxa de Sucesso da Ingestão:** Percentual de requisições enviadas para a BrasilAPI que retornaram com sucesso (Status 200) vs. falhas cadastrais (CNPJs inválidos ou inexistentes).
-* **Volumetria Diária:** Monitoramento do volume de linhas injetadas por execução para garantir que não haja quedas drásticas ou anomalias no fluxo de processamento.
+* **Volumetria:** Monitoramento do volume de linhas injetadas por execução para garantir que não haja quedas drásticas ou anomalias no fluxo de processamento.
 * **Métricas de FinOps:** Rastreabilidade do tempo de execução e volume de dados trafegados, ajudando a garantir o funcionamento do pipeline dentro do limite de gratuidade (Free Tier) da GCP.
 
 ### 💡 Extração de Insights Cadastrais Básicos
