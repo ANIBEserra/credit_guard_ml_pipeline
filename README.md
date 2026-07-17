@@ -23,9 +23,9 @@ Este projeto apresenta o ciclo de vida completo de um pipeline de dados governad
 * [3. Arquitetura Medalhão Serverless](#3-arquitetura-medalhão-serverless)
 * [4. Organização do Repositório & Estrutura de Pastas](#4-organização-do-repositório--estrutura-de-pastas)
 * [5. Política de Governança de Dados & Gestão de Metadados](#5-política-de-governança-de-dados--gestão-de-metadados)
-* [6. Ciclo de Testes e Entrega](#7-ciclo-de-testes-e-entrega)
-* [7. Monitoramento do Pipeline & Insights Operacionais](#8-monitoramento-do-pipeline--insights-operacionais)
-* [8. Entregáveis do Projeto](#9-entregáveis-do-projeto)
+* [6. Ciclo de Testes e Entrega](#6-ciclo-de-testes-e-entrega)
+* [7. Monitoramento do Pipeline & Insights Operacionais](#7-monitoramento-do-pipeline--insights-operacionais)
+* [8. Entregáveis do Projeto](#8-entregáveis-do-projeto)
 
 ---
 
