@@ -98,11 +98,15 @@ A arquitetura do projeto foi desenhada seguindo os princípios de desacoplamento
  └────────────────────────────────────────┘
 ```
 
+<details>
+<summary>📌 <b>Clique aqui para expandir os detalhamentos técnicos</b></summary>
+
 ### Detalhamento Técnico das Camadas
 * **Camada Bronze (Raw/JSON):** Os dados retornados da API em formato JSON bruto são salvos diretamente no Google Cloud Storage (GCS). Isso preserva a imutabilidade do dado original e permite reprocessamentos futuros (replayabilidade) sem onerar a API de origem.
 * **Processamento e Otimização (.parquet):** Utilizando Python, o payload JSON é parseado, limpo e convertido para o formato colunar `.parquet`. Esta etapa reduz drasticamente o tamanho do arquivo final no Data Lake e otimiza a velocidade de leitura para as etapas analíticas.
 * **Camada Silver (Structured/BigQuery):** Os arquivos `.parquet` estruturados no GCS são integrados ao Google BigQuery. Nesta camada analítica, os dados ganham tipagem rígida, schemas bem definidos e ficam organizados de forma relacional (Tabela de Empresas e Tabela de Quadro de Sócios).
 * **Camada de Entrega (BI/Looker Studio):** O BigQuery expõe as tabelas diretamente para o Looker Studio, onde métricas operacionais e volumétricas são exibidas de forma fluida, sem a necessidade de processamentos complexos em tempo de execução no painel.
+</details>
 
 ---
 
@@ -130,11 +134,15 @@ O projeto foi estruturado de forma prática e organizada, separando os scripts d
 └── requirements.txt         # Dependências do projeto (pandas, pyarrow, google-cloud-storage, etc.)
 ```
 
+<details>
+<summary>📌 <b>Clique aqui para expandir a organização do fluxo</b></summary>
+
 ### Organização do Fluxo & Gerenciamento de Arquivos Temporários
 * **Insumo de Entrada (`data/input/cnpjs.csv`):** Arquivo estático contendo a relação de CNPJs que o pipeline deve processar a cada execução.
 * **Ciclo de Vida Local e Efemeridade:** Para garantir a resiliência e o isolamento de etapas, o script cria as pastas `data/raw/` e `data/silver/` em tempo de execução para apoiar o processamento local. No entanto, ao final do pipeline, a função `clean_local_temp_files` expurga esses diretórios. Isso garante que o runner do GitHub Actions não acumule lixo eletrônico e atenda a boas práticas de segurança de dados.
 * **Isolamento de Regras (`configs/`):** Centraliza os mapeamentos e renomeações de colunas. Caso a API de origem altere o nome de algum campo, a manutenção é feita apenas neste arquivo, mantendo o script principal intacto.
 * **Exploratório (`notebooks/`):** Espaço focado no desenvolvimento incremental, testes de conexões e prototipação das transformações analíticas antes de integrá-las ao código de produção.
+</details>
 
 ---
 
