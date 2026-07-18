@@ -5,9 +5,11 @@
   <a href="README.es.md">🇪🇸 Español</a>
 </p>
 
+> 🎓 **Nota de Desenvolvimento:** Este projeto foi desenhado e implementado como aplicação prática dos conhecimentos adquiridos na **Formação de Governança de Dados da Alura**. O objetivo é consolidar conceitos estruturados de qualidade de dados, privacidade e gestão de metadados em um cenário simulado de uma empresa data driven.
+
 ---
 
-Acesse o Looker Studio para visualizar o Portal de monitoramento: [Credit Guard Pipeline](https://datastudio.google.com/s/oUAEZgpbSvY)
+Acesse o Looker Studio para visualizar o Portal de Monitoramento: [Credit Guard Pipeline](https://datastudio.google.com/s/oUAEZgpbSvY)
 
 
 # Case Study: CreditGuard — Pipeline de Engenharia de Dados Governado
@@ -146,42 +148,94 @@ Para garantir que a CreditGuard opere de acordo com padrões éticos, legais e r
 │ Assegurar LGPD│      │ Todo o fluxo  │      │ Eng/Gov/Risk  │      │  PII/Efêmero  │      │ CI-CD/Logs/DQ │
 └───────────────┘      └───────────────┘      └───────────────┘      └───────────────┘      └───────────────┘
 ```
+<details>
+<summary>📌 <b>Clique aqui para expandir os papéis de governança</b></summary>
 
-### 🔵 5.1. Propósito
-Garantir a integridade, rastreabilidade e privacidade dos dados de pessoas jurídicas durante todo o ciclo de vida da informação no pipeline da CreditGuard. Esta política existe para mitigar riscos de vazamento de dados confidenciais (em conformidade com a LGPD) e assegurar que as decisões de análise de crédito sejam tomadas com base em dados de qualidade e auditáveis.
+<br>
 
-### 🔵 5.2. Escopo
+<details>
+<summary><font size="3"><b> 5.1. Propósito</b></font></summary>
+
+Garantir a integridade e rastreabilidade durante todo o ciclo de vida da informação no pipeline da CreditGuard. Esta política existe para assegurar que as decisões de análise de crédito sejam tomadas com base em dados de qualidade e auditáveis.
+</details>
+
+<details>
+<summary><font size="3"><b> 5.2. Escopo</b></font></summary>
+
 Esta política aplica-se de forma obrigatória a todas as etapas e ativos de dados envolvidos no projeto:
 * Arquivos de entrada estáticos de CNPJs (`cnpjs.csv`).
 * Ambiente de execução temporário (Runner local ou GitHub Actions).
 * Camadas física e lógica na nuvem (Google Cloud Storage e Google BigQuery).
 * Painéis visuais de consumo analítico (Looker Studio).
+</details>
 
-### 🔵 5.3. Papéis e Responsabilidades
-* **Engenharia de Dados (DE):** Responsável por implementar e manter a segurança técnica do pipeline, garantir a limpeza de arquivos locais, o versionamento do código e o provisionamento correto de acessos via Service Accounts no GCP.
-* **Analista de Governança de Dados (DG):** Responsável por definir as regras de classificação de dados, validar as políticas de privacidade, gerenciar o dicionário de dados de metadados, formalização de Data Owners, Data Stewards e Data Custodians e monitorar os indicadores de qualidade.
-* **Analistas de Negócio / Risco de Crédito:** Consumidores finais das tabelas tratadas na camada Silver e dos dashboards. Não possuem privilégios de escrita nos bancos de dados e devem consumir os dados de pessoas físicas de forma estritamente enmascarada.
+<details>
+<summary><font size="3"><b> 5.3. Papéis e Responsabilidades</b></font></summary>
 
-### 🔵 5.4. Diretrizes
+A estrutura de responsabilidades do projeto segue o modelo de governança descentralizada, separando a custódia técnica, a facilitação metodológica e a propriedade de negócio dos dados:
+
+* **Analista de Governança de Dados:**
+  * Define o framework de governança, padrões de nomenclatura e regras gerais de classificação de segurança.
+  * Facilita a criação e gerencia a sustentação do Catálogo de Dados, Inventário e Glossário no Looker Studio.
+  * Formaliza Data Owner, Data Steward e Data Custodian, garantindo que os papéis de negócio estejam claramente definidos e documentados.
+  * Apoia o Data Steward na definição de métricas de qualidade de dados (DQ) e monitora a conformidade do processo.
+
+* **Engenharia de Dados (Data Custodian):**
+  * Implementa e mantém a infraestrutura técnica do pipeline (CI/CD, scripts em Python e cargas no GCP).
+  * Executa os procedimentos automáticos de expurgo e mascaramento técnico de dados locais e na nuvem.
+  * Garante a estabilidade, a performance operacional do fluxo e a aplicação das chaves de segurança de forma protegida.
+
+* **Head/Gestor de Risco de Crédito (Data Owner):**
+  * Assume a responsabilidade final pelo ciclo de vida, conformidade legal (LGPD) e riscos financeiros associados ao uso dos dados de CNPJ e Sócios.
+  * Define os níveis de criticidade dos dados e aprova o compartilhamento ou novos usos da base para modelos de crédito.
+  * Estipula o apetite a risco em relação à qualidade da informação (ex: se o pipeline pode ou não continuar operando caso faltem determinados dados opcionais da API).
+
+* **Analista de Risco Sênior (Data Steward):**
+  * Atua como a referência de negócio para definir e documentar os conceitos das variáveis no Glossário de Dados.
+  * Homologa e valida se as regras de transformação e limpeza criadas pela engenharia refletem fielmente as regras de política de crédito da empresa.
+  * Define os critérios de aceitação para a qualidade dos dados (ex: quais CNAEs são impeditivos) e consome os alertas de desvios gerados pelo monitoramento.
+
+* **Analistas de Risco e Modelagem (Data Consumers):**
+  * Consomem as tabelas tratadas na camada Silver e os dashboards operacionais para análises diárias e tomada de decisão.
+  * Utilizam os dados de pessoas físicas (sócios) de forma estritamente enmascarada na camada visual, reportando qualquer inconsistência ou suspeita de vazamento de informações à equipe de Governança.
+</details>
+
+<details>
+<summary><font size="3"><b> 5.4. Diretrizes</b></font></summary>
+
 * **Diretriz de Descarte:** Os arquivos locais criados nas pastas `data/raw/` e `data/silver/` devem ser eliminados pelo script (`clean_local_temp_files`) imediatamente após o upload bem-sucedido para o Cloud Storage.
 * **Diretriz de Nomenclatura (Metadados):** O mapeamento de colunas no arquivo `configs/mapping.py` deve adotar o padrão de redução taxonômica inspirado no DATASUS (ex: `NRCNPJ`, `NMRAZSOC`), padronizando o dicionário de dados corporativo.
 * **Diretriz de Privacidade (LGPD):** Dados pessoais identificáveis (PII) dos sócios, como o CPF parcial, devem receber tratamento de mascaramento na camada de exibição analítica.
 * **Diretriz de Qualidade de Dados:** O preenchimento das variáveis de identificação essenciais (`NRCNPJ` e `CDCNAEFISC`) deve ser mantido em 100%. A qualidade de preenchimento das demais variáveis deve ser auditada e monitorada visualmente através de uma View de Data Quality dinâmica no BigQuery.
+</details>
 
-### 🔵 5.5. Conformidade e Exceções
-* **Bloqueio em CI/CD:** Scripts que exponham chaves de segurança (GCP Credentials JSON) ou que não contenham o método de exclusão automática de arquivos temporários serão sumariamente bloqueados durante a etapa de pull-request no GitHub Actions.
-* **Tratamento de Exceções Operacionais:** Se a taxa de sucesso das requisições na API cair abaixo do limite crítico de 90%, o pipeline registrará o incidente como um log de alerta na tabela de logs. A equipe de Governança deve ser notificada para auditar eventuais alterações na estrutura de retorno da API de origem.
+<details>
+<summary><font size="3"><b> 5.5. Conformidade, Barreiras e Exceções</b></font></summary>
 
-### 🔵 5.6. Gestão de Metadados: Inventário, Catálogo e Glossário
+Para garantir a resiliência operacional e a segurança jurídica da esteira de crédito, o pipeline implementa controles automáticos divididos em três camadas:
+
+* **1. Controles Preventivos (Esteira de CI/CD)***🚧 Status: Em desenvolvimento*
+
+* **2. Controles Detectivos (Qualidade e SLAs em Produção)***🚧 Status: Em desenvolvimento*
+
+* **3. Regras de Contingência e Continuidade de Negócio (Fallback)***🚧 Status: Em desenvolvimento*
+</details>
+
+<details>
+<summary><font size="3"><b> 5.6. Gestão de Metadados: Inventário, Catálogo e Glossário</b></font></summary>
+
 Para garantir a escalabilidade da governança e facilitar a usabilidade (*Data Discovery*) tanto para perfis técnicos quanto de negócio, a gestão detalhada dos metadados está centralizada em um **Portal Interativo no Looker Studio**.
 
 O ambiente foi desenhado para oferecer uma navegação fluida em diferentes níveis de granularidade:
 
-* **🌐 Visão de Inventário de Dados (Macro):** Uma visão gerencial focada no ciclo de vida e na conformidade do ativo de dados. Apresenta informações a nível de *dataset* e tabela, documentando a frequência de atualização, responsáveis (*Data Owner* e *Data Steward*), descrições gerais, além do enquadramento LGPD (base legal, finalidade de uso e classificação de confidencialidade).
+* **🌐 Visão de Inventário de Dados (Macro):** Uma visão gerencial focada no ciclo de vida e na conformidade do ativo de dados. Apresenta informações a nível de *dataset* e tabela, documentando a frequência de atualização, responsáveis (*Data Owner* e *Data Steward*), descrições gerais, além do endquadramento LGPD (base legal, finalidade de uso e classificação de confidencialidade).
 * **🔍 Visão de Catálogo de Dados (Micro):** Acessada através da coluna interativa de "Detalhes" no Inventário, esta página faz o *drill-down* para o nível físico. Ela detalha cada campo (coluna), especificando a tipagem do dado, tamanho e eventuais regras de transformação ou mascaramento aplicadas durante o pipeline, sem perder o contexto de negócio da tabela pai.
 * **📚 Glossário de Dados:** Acessível via link fixo no canto superior direito do painel, garantindo que o vocabulário de negócio e as métricas organizacionais estejam sempre a um clique de distância durante a exploração.
 
 🔗 **[Acesse o Portal de Governança e Catálogo de Dados aqui](inserir-link-do-looker-aqui)** *🚧 Status: Em desenvolvimento*
+</details>
+
+</details>
 
 ---
 
